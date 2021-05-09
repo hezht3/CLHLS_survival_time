@@ -3,7 +3,6 @@
 * healthy-aging project
 * Verify Yaxi's code on generting survival time: 98_14wave.do
 
-
 // set working directories
 global root "F:\Box Sync\Archives2020LLY\Zhengting\Duke Kunshan University Intern (zh133@duke.edu)\4 healthy aging-CLHLS\Group meeting coordination\survival time"
 * define path for data sources
@@ -13,9 +12,7 @@ global OUT "${root}/out data"
 * define path for INTERMEDIATE
 global INTER "${root}/inter data"
 
-
 use "${RAW}/1998_2014_longitudinal_dataset_released_version1.dta", clear
-
 
 // codebook on death variables
 
@@ -57,7 +54,6 @@ use "${RAW}/1998_2014_longitudinal_dataset_released_version1.dta", clear
 * 0:surviving at the ## survey;
 * 1: died before the ## survey
 
-
 // check whether there are logical mistakes for dth**_##
 * If the current death status is -9/0/1, the previous one can only be 0;
 * if the current death status is -8, then the previous can only be -8,-9 and 1.
@@ -80,11 +76,11 @@ restore
 * id=50001898, died in 02_05wave, should change dth98_00/d0vyear/month/day from -9 to 0/-7
 * id=45107898, have two died dates, 02_05wave:2002.8.29, and 05_08wave:2006.12.21, both dth02_05 and dth05_08 are 1. Inferring from the data, the person should die in 05_05wave, as there is detailed info in 2005 for that person.
 
-replace dth98_00 = 0 if id==50001898 
-replace dth02_05 = 0 if id==45107898
-replace d5vday = -7 if id==45107898
-replace d5vmonth = -7 if id==45107898
-replace d5vyear = -7 if id==45107898
+replace dth98_00 = 0 if id == 50001898 
+replace dth02_05 = 0 if id == 45107898
+replace d5vday = -7 if id == 45107898
+replace d5vmonth = -7 if id == 45107898
+replace d5vyear = -7 if id == 45107898
 
 keep id dth98_00 dth00_02 dth02_05 dth05_08 dth08_11 dth11_14 d0vyear d0vmonth d0vday d2vyear d2vmonth d2vday d5vyear d5vmonth d5vday d8vyear d8vmonth d8vday d11vyear d11vmonth d11vday d14vyear d14vmonth d14vday
 
@@ -101,5 +97,47 @@ global year2 "2000 2004 2008 2012"
 global months "4 6 9 11"
 global wavein "in98 in0 in2 in5 in8 in11 in14"
 save "${INTER}/work.dta",replace
+
+// check whether there are logical mistakes between d*vyear d*vmonth d*vday dth**_##
+foreach i of global waves {
+    recode d`i'vday(. 88=99) 
+    recode d`i'vmonth(. 88=99)
+    recode d`i'vyear(. 88 9999=99)  //no 88 for all the 4 vars
+    
+    replace d`i'vyear = 1 if d`i'vyear > 1997 & d`i'vyear < 2020
+    replace d`i'vmonth = 1 if d`i'vmonth > 0 & d`i'vmonth < 13
+    replace d`i'vday = 1 if d`i'vday > 0 & d`i'vday < 32
+    
+    bys d`i'vyear: gen fre`i'_year = _N
+    bys d`i'vmonth: gen fre`i'_month = _N
+    bys d`i'vday: gen fre`i'_day = _N
+    bys dth`i': gen fre`i'_dth = _N
+}
+label drop _all
+save "${INTER}/work1.dta", replace
+
+foreach i of global waves{
+    keep d`i'vyear d`i'vmonth d`i'vday dth`i' fre`i'_year fre`i'_month fre`i'_day fre`i'_dth 
+    duplicates drop d`i'vyear d`i'vmonth d`i'vday dth`i', force 
+    save "${INTER}/wave`i'.dta", replace
+    use "${INTER}/work1.dta", clear
+}
+use "${INTER}/wave14.dta",clear
+append using "${INTER}/wave0.dta" "${INTER}/wave2.dta" "${INTER}/wave5.dta" "${INTER}/wave8.dta" "${INTER}/wave11.dta"
+
+/* The results show that, in wave0-wave11, -9, -8, 0/-7(alive) have completely the same freq, //I am not sure about this statement
+all missing values in d*vyear/month/day occur only when dth*=1(died). Only in wave14, all is missing in d14vyear/month/day when dth14=-9/-8/0.
+There is no logical mistakes between the 4 vars.*/
+
+// tabulate the lost,died and alive number for each wave
+use "${INTER}/work1.dta",clear
+foreach i of global waves{
+    tabulate dth`i' if dth`i' !=-8
+}
+
+foreach i of global waves{
+    erase "${INTER}/wave`i'.dta"
+}
+erase "${INTER}/work1.dta"
 
 
