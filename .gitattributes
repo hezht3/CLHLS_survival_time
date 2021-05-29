@@ -1,0 +1,8 @@
+* linguist-language
+*.ipynb linguist-language=Jupyter Notebook
+*.R linguist-language=R
+*.rds linguist-language=R
+*.Rmd linguist-language=HTML
+*.do linguist-language=Stata
+*.dta linguist-language=Stata
+*.sas linguist-language=SAS
