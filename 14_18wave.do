@@ -219,4 +219,4 @@ gen survival_bth14_18=survival_bas14_18+trueage
 erase "${INTER}/work.dta"
 macro drop _all
 
-save "${OUT}/dat14_18.dta" // Match with Yaxi's dataset
+save "${OUT}/dat14_18surtime.dta" // Match with Yaxi's dataset
