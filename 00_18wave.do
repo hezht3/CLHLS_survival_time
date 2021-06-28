@@ -18,6 +18,8 @@ global INTER "${root}/inter data"
 
 /************************************* (1) Extract new added data at current wave *************************************/
 use "${RAW}/2000_2014_longitudinal_dataset_released_version1.dta", clear
+gen int id_year=mod(id,100)
+keep if id_year==0 //6368 obs
 
 /************************************* (2) Check the actual values of death date variables, against the codebook for those variables *************************************/
 foreach var in d2vyear d5vyear d8vyear d11vyear d14vyear d2vmonth d5vmonth d8vmonth d11vmonth d14vmonth d2vday d5vday d8vday d11vday d14vday dth98_00 dth00_02 dth02_05 dth05_08 dth08_11 dth11_14 {
@@ -75,12 +77,11 @@ forv i = 2/5 {
 restore
 keep if (dth05_08 == -9 | dth05_08 == 0 | dth05_08 == 1) & dth02_05 == 1
 
-* id = 45107898 were problematic
-* id=45107898, have two died dates, 02_05wave:2002.8.29, and 05_08wave:2006.12.21, both dth02_05 and dth05_08 are 1. Inferring from the data, the person should die in 05_08wave, as there is detailed info in 2005 for that person.
-
 *****************************create work.dta, which has changed the death status according results above, and renanme dth**_##***********
 clear
 use "${RAW}/2000_2014_longitudinal_dataset_released_version1.dta"  //******need to be changed
+gen int id_year=mod(id,100)
+keep if id_year==0 //6368 obs
 
 replace dth02_05 = 0 if id == 45107898
 replace d5vday = -7 if id == 45107898
