@@ -83,11 +83,6 @@ use "${RAW}/2000_2014_longitudinal_dataset_released_version1.dta"  //******need 
 gen int id_year=mod(id,100)
 keep if id_year==0 //6368 obs
 
-replace dth02_05 = 0 if id == 45107898
-replace d5vday = -7 if id == 45107898
-replace d5vmonth = -7 if id == 45107898
-replace d5vyear = -7 if id == 45107898
-
 rename dth00_02 dth2
 rename dth02_05 dth5
 rename dth05_08 dth8
@@ -153,7 +148,7 @@ erase "${INTER}/work1.dta"
 
 use "${INTER}/work.dta", clear
 /*change all . to 99 for month&day, . to 9999 for year*/
-foreach a of global waves{
+foreach a of global waves {
     recode d`a'vday (. = 99) 
     recode d`a'vmonth (. = 99)
     recode d`a'vyear (. = 9999)
@@ -280,14 +275,14 @@ gen lostdate = .
 gen survival_bas = .
 
 local j=1
-foreach i of global waves{
+foreach i of global waves {
     replace dthyear = d`i'vyear if d`i'vyear > 0 & d`i'vyear < 2020
     replace dthmonth = d`i'vmonth if d`i'vmonth > 0 & d`i'vmonth < 13
     replace dthday = d`i'vday if d`i'vday > 0 & d`i'vday < 32
 local inid = word("$wavein", `j')
     replace lostdate = mdy(midmonth_`inid'_in`i', midday_`inid'_in`i', midyear_`inid'_in`i') if dth`i' == -9
 local j = `j' + 1
-}  //3368 died in dth98_00, 1604 in dth00_02, 1308 in dth02_05, 480 in dth05_08, 177 in dth08_11, 75 in dth11_14
+}
 
 gen dthdate = mdy(dthmonth, dthday, dthyear)
 replace survival_bas = (dthdate - interview_baseline)/365.25
@@ -296,9 +291,9 @@ replace censor = 1 if survival_bas != .  //generate censor=1 if die, censor=0 if
 
 replace survival_bas = (lostdate - interview_baseline)/365.25 if lostdate != .
 gen lost = 1
-replace lost = . if lostdate == .  //lost:893,585,284,214,53,6 lost in 0 2 5 8 11 14 wave
+replace lost = . if lostdate == .
 
-gen interview2014 = mdy(monthin_14, dayin_14, yearin_14) if dth14 == 0 //47 changes
+gen interview2014 = mdy(monthin_14, dayin_14, yearin_14) if dth14 == 0
 replace survival_bas = (interview2014 - interview_baseline)/365.25 if interview2014 != .
 
 **************replace the survival time to 0 for those whose survival was negative
@@ -322,10 +317,10 @@ gen survival_bth00_18 = survival_bth00_14
 replace survival_bth00_18 = survival_bth00_14 + survival_bas14_18 if censor00_14 == 0 & _merge == 3
 
 gen censor00_18 = censor00_14
-replace censor00_18 = censor14_18 if _merge == 3  //23, 47, 282, 290 died between 2014 and 2018
+replace censor00_18 = censor14_18 if _merge == 3
 
 gen lost00_18 = lost00_14
-replace lost00_18 = lost14_18 if _merge == 3 //14, 29, 288, 87 lost between 2014 and 2018
+replace lost00_18 = lost14_18 if _merge == 3
 
 drop if _merge==2
 drop _merge
