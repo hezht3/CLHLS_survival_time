@@ -201,15 +201,15 @@ drop min_`wavein3' max_`wavein3'
 * c. for the rest of all the scenarios, the year/month/day is assumed to be that of the mid-point between the last interview date of the previous wave and
 * the first interview date of the next wave. (these scenarios inc, all the three variables are missing, or any two variables are missing, or only year is
 * missing.)
-local j=1
+local j = 1
 foreach i of global waves { 
     local inid=word("$wavein",`j')
-        replace d`i'vday=midday_`inid'_in`i' if d`i'vday==99 & dth`i'==1
-        replace d`i'vmonth=midmonth_`inid'_in`i' if d`i'vmonth==99 & dth`i'==1
-        replace d`i'vyear=midyear_`inid'_in`i' if d`i'vyear==9999 & dth`i'==1
+        replace d`i'vday = midday_`inid'_in`i' if d`i'vday == 99 & dth`i' == 1
+        replace d`i'vmonth = midmonth_`inid'_in`i' if d`i'vmonth == 99 & dth`i' == 1
+        replace d`i'vyear = midyear_`inid'_in`i' if d`i'vyear == 9999 & dth`i' == 1
       
-        recode d`i'vday (99=15) if d`i'vmonth!=99 & d`i'vyear!=9999 & dth`i'==1 
-        recode d`i'vmonth (99=7) if d`i'vday!=99 & d`i'vyear!=9999 & dth`i'==1 
+        recode d`i'vday (99 = 15) if d`i'vmonth != 99 & d`i'vyear != 9999 & dth`i' == 1 
+        recode d`i'vmonth (99 = 7) if d`i'vday != 99 & d`i'vyear != 9999 & dth`i' == 1 
     
     local j=`j'+1
 }
@@ -221,13 +221,13 @@ foreach i of global waves {
 * c. change day 31 to 30 for months 4, 6, 9, 11
 foreach i of global waves{
     foreach year of global year1{
-        recode d`i'vday (29/max=28) if d`i'vyear==`year' & d`i'vmonth==2
+        recode d`i'vday (29/max=28) if d`i'vyear == `year' & d`i'vmonth == 2
     }
     foreach year of global year2{
-        recode d`i'vday (30/max=29) if d`i'vyear==`year' & d`i'vmonth==2
+        recode d`i'vday (30/max=29) if d`i'vyear == `year' & d`i'vmonth == 2
     }
     foreach month of global months{
-        recode d`i'vday (31=30) if d`i'vmonth==`month'
+        recode d`i'vday (31=30) if d`i'vmonth == `month'
     }
 }
 
@@ -244,10 +244,10 @@ foreach i of global waves{
 * Rule 3:
 * a. if only the interview day is missing, then the day is assumed to be 15th
 * b. if both month and day are missing and the year isn't missing, or only the month is missing, the month/day is assumed to be that of the mid-point between the earliest interview date
-* and the latest interiew date of htat year
+* and the latest interiew date of that year
 * c. no interview year is missing
 
-recode date98 (99=15) if month98!=99                                             //******need to be changed
+recode date98 (99=15) if month98 != 99                                             //******need to be changed
 
 gen end98 = mdy(12, 31, 1998)
 gen begin99 = mdy(1, 1, 1999)
@@ -314,14 +314,14 @@ local inid = word("$wavein", `j')
 local j = `j' + 1
 }  //3368 died in dth98_00, 1604 in dth00_02, 1308 in dth02_05, 480 in dth05_08, 177 in dth08_11, 75 in dth11_14
 
-gen dthdate=mdy(dthmonth,dthday,dthyear)
-replace survival_bas=(dthdate-interview_baseline)/365.25
-gen censor=0
-replace censor=1 if survival_bas !=.  //generate censor=1 if die, censor=0 if survived until end of the wave or lost to follow
+gen dthdate = mdy(dthmonth, dthday, dthyear)
+replace survival_bas = (dthdate - interview_baseline)/365.25
+gen censor = 0
+replace censor = 1 if survival_bas != .  //generate censor=1 if die, censor=0 if survived until end of the wave or lost to follow
 
-replace survival_bas=(lostdate-interview_baseline)/365.25 if lostdate !=.
-gen lost=1
-replace lost=. if lostdate ==.  //lost:893,585,284,214,53,6 lost in 0 2 5 8 11 14 wave
+replace survival_bas = (lostdate - interview_baseline)/365.25 if lostdate != .
+gen lost = 1
+replace lost = . if lostdate == .  //lost:893,585,284,214,53,6 lost in 0 2 5 8 11 14 wave
 
 gen interview2014 = mdy(monthin_14, dayin_14, yearin_14) if dth14 == 0 //47 changes
 replace survival_bas = (interview2014 - interview_baseline)/365.25 if interview2014 != .
@@ -332,7 +332,27 @@ sum survival_bas //3.472558(2.978225) vs 3.47288(2.978245)from Enying
 replace survival_bas = 0 if survival_bas < 0  
 * gen survival_bth,means the years from birth to death or censored
 replace survival_bth = survival_bas + trueage                                                            
-erase work.dta
+erase "${INTER}/work.dta"
 macro drop _all
 
-save "${OUT}/dat98_14.dta", replace                                                           //******need to be changed
+/************************************* (10) calc survival time to 2018 *************************************/
+
+merge 1:1 id using "${OUT}/dat14_18surtime.dta", keepus(id survival_bas14_18 survival_bth14_18 censor14_18 lost14_18) nolabel //47, 96, 1110, 821 merged for dat98/00/05/11_14
+
+ren (survival_bas survival_bth lost censor) (survival_bas98_14 survival_bth98_14 lost98_14 censor98_14)
+gen survival_bas98_18 = survival_bas98_14
+replace survival_bas98_18 = survival_bas98_14 + survival_bas14_18 if censor98_14 == 0 & _merge == 3
+
+gen survival_bth98_18=survival_bth98_14
+replace survival_bth98_18 = survival_bth98_14 + survival_bas14_18 if censor98_14 == 0 & _merge == 3
+
+gen censor98_18 = censor98_14
+replace censor98_18=censor14_18 if _merge==3  //23, 47, 282, 290 died between 2014 and 2018
+
+gen lost98_18=lost98_14
+replace lost98_18=lost14_18 if _merge==3 //14, 29, 288, 87 lost between 2014 and 2018
+
+drop if _merge==2
+drop _merge
+
+save "${OUT}/dat98_18surtime.dta", replace
