@@ -179,11 +179,11 @@ gen in11 = mdy(monthin_11, dayin_11, yearin_11)
 gen in14 = mdy(monthin_14, dayin_14, yearin_14)
 
 forv i=1/6 {                                                                     //******need to be changed                                               
-    local wavein2 = word("$wavein",`i')
+    local wavein2 = word("$wavein", `i')
          egen min_`wavein2' = min(`wavein2')
          egen max_`wavein2' = max(`wavein2')
     local j = `i'+1
-    local wavein3 = word("$wavein",`j')
+    local wavein3 = word("$wavein", `j')
          egen min_`wavein3' = min(`wavein3')
          egen max_`wavein3' = max(`wavein3')
     gen mid_`wavein2'_`wavein3' = (max_`wavein2' + min_`wavein3')/2
@@ -203,7 +203,7 @@ drop min_`wavein3' max_`wavein3'
 * missing.)
 local j = 1
 foreach i of global waves { 
-    local inid=word("$wavein",`j')
+    local inid = word("$wavein",`j')
         replace d`i'vday = midday_`inid'_in`i' if d`i'vday == 99 & dth`i' == 1
         replace d`i'vmonth = midmonth_`inid'_in`i' if d`i'vmonth == 99 & dth`i' == 1
         replace d`i'vyear = midyear_`inid'_in`i' if d`i'vyear == 9999 & dth`i' == 1
@@ -211,7 +211,7 @@ foreach i of global waves {
         recode d`i'vday (99 = 15) if d`i'vmonth != 99 & d`i'vyear != 9999 & dth`i' == 1 
         recode d`i'vmonth (99 = 7) if d`i'vday != 99 & d`i'vyear != 9999 & dth`i' == 1 
     
-    local j=`j'+1
+    local j = `j'+1
 }
 
 /************************************* (6) Modify input mistakes of death date according to Rule 2 *************************************/
@@ -331,7 +331,7 @@ sum survival_bas //3.472558(2.978225) vs 3.47288(2.978245)from Enying
 * gen survival_bth,means the years from birth to death or censored
 replace survival_bas = 0 if survival_bas < 0  
 * gen survival_bth,means the years from birth to death or censored
-replace survival_bth = survival_bas + trueage                                                            
+gen survival_bth = survival_bas + trueage                                                            
 erase "${INTER}/work.dta"
 macro drop _all
 
