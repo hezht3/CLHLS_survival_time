@@ -1,40 +1,37 @@
 clear
 cd "C:\AAA\PYAN\CLHLS\Longitudinal data"
-use "C:\AAA\PYAN\CLHLS\Longitudinal data\2000_2014_longitudinal_dataset_released_version1.dta"
-****Extract the new added data at 2000 survey
+use "C:\AAA\PYAN\CLHLS\Longitudinal data\2005_2014_longitudinal_dataset_released_version1", clear
+*Extract the new added data at 2005 survey*
 gen int id_year=mod(id,100)
-keep if id_year==0 //6368 obs
+keep if id_year==05 //7459 obs
 
 ************************codebook on death variables*************************
-*d2vyear, d5vyear, d8vyear, d11vyear, d14vyear: validated year of death*/
+*d8vyear, d11vyear, d14vyear: validated year of death*/
 * -9:lost to follow up in the 2000/2002/2005/2008/2011/2014 survey*
 * -8:died or lost to follow-up in previous waves*
 * -7:it is for the deceased persons, not applicable for survivors*
-* . 9999: missing*/
-*d2vmonth, d5vmonth, d8vmonth, d11vmonth, d14vmonth:validated month of death*/
+* . : missing*/
+*d8vmonth, d11vmonth, d14vmonth:validated month of death*/
 * -9: lost to follow-up in the 2000/02/05/08/11/14 survey*/
 * -8: died or lost to follow-up in previous waves*/
 * -7: it is for the deceased persons, not applicable for survivors*/
-* . 99: missing*/
-*d2vday, d5vday, d8vday, d11vday, d14vday: validated day of death*/
+* . : missing*/
+*d8vday, d11vday, d14vday: validated day of death*/
 * -9: lost to follow-up in the 2000/02/05/08/11/14 survey*/ 
 * -8: died or lost to follow-up in previous waves*/
 * -7: it is for the deceased persons, not applicable for survivors*/
 * . 99: missing*/
-*dth00_02, dth02_05, dth05_08, dth08_11, dth11_14: status of survival, death, or lost to follow-up from 2000-2002/2002-2005/2005-2008/2008-2011/2011-2014 waves*/
+*dth05_08, dth08_11, dth11_14: status of survival, death, or lost to follow-up from 2000-2002/2002-2005/2005-2008/2008-2011/2011-2014 waves*/
 * dth**_##: -9:lost to follow-up at the ## survey; -8:died or lost to follow-up in previous waves; 0:surviving at the ## survey; 1: died before the ## survey */
-* dth08_11:  2:surviving at 2011 survey but died before 2012 survey(only one,2011.12.9 died)
 
 *********check whether there are logical mistakes for dth**_##
 * If the current death status is -9/0/1, the previous one can only be 0; if the current death status is -8, then the previous can only be -8,-9 and 1. 
-preserve  
-rename dth00_02 dth2                                                            //******need to be changed
-rename dth02_05 dth3
+preserve                                                                        //******need to be changed
 rename dth05_08 dth4
 rename dth08_11 dth5
 rename dth11_14 dth6
 label drop _all
-forv i=2/5{
+forv i=4/5{
 local j=`i'+1
 tab dth`i' if dth`j'==-9|dth`j'==0|dth`j'==1,missing //0
 tab dth`i' if dth`j'==-8,missing //-8,-9,1
@@ -42,17 +39,15 @@ tab dth`i' if dth`j'==-8,missing //-8,-9,1
 restore
 
 *****************************create work.dta, which has changed the death status according results above, and renanme dth**_##***********
-rename dth00_02 dth2
-rename dth02_05 dth5
 rename dth05_08 dth8
 rename dth08_11 dth11
 rename dth11_14 dth14
 
-global waves "2 5 8 11 14"                                                    //******need to be changed
-global year1 "2000 2001 2002 2003 2005 2006 2007 2009 2010 2011 2013 2014"
-global year2 "2000 2004 2008 2012"
+global waves "8 11 14"                                                          //******need to be changed
+global year1 "2005 2006 2007 2009 2010 2011 2013 2014"
+global year2 "2008 2012"
 global months "4 6 9 11"
-global wavein "in0 in2 in5 in8 in11 in14"
+global wavein "in5 in8 in11 in14"
 save work,replace
 
 *********check whether there are logical mistakes between d*vyear d*vmonth d*vday dth**_##
@@ -77,7 +72,7 @@ save wave`i',replace
 use work1,clear
 }
 use wave14,clear
-append using wave2 wave5 wave8 wave11                                           //******need to be changed
+append using wave8 wave11                                                       //******need to be changed
 
 /* The results show that, in wave0-wave11, -9, -8, 0/-7(alive) have completely the same freq, 
 all missing values in d*vyear/month/day occur only when dth*=1(died). Only in wave14, all is missing in d14vyear/month/day when dth14=-9/-8/0. 
@@ -104,14 +99,14 @@ recode d`a'vyear(.=9999)
 }
 
 ****calculate the mid-point between the last interview date of the previous wave and the first interview date of the next wave
-capture noisily gen in98=mdy(month98,date98,year9899)                           
-capture noisily gen in0=mdy(month00,day00,2000)                                 //******need to be changed
-capture noisily gen in2=mdy(month_2,day_2,2002)
-capture noisily gen in5=mdy(month_5,day_5,2005)
+capture noisily gen in98=mdy(month98,date98,year9899)                            
+capture noisily gen in0=mdy(month_0,day_0,2000)
+capture noisily gen in2=mdy(month02,day02,2002)
+capture noisily gen in5=mdy(monthin,dayin,2005)                                 //******need to be changed
 capture noisily gen in8=mdy(month_8,day_8,year_8)
 gen in11=mdy(monthin_11,dayin_11,yearin_11)
 gen in14=mdy(monthin_14,dayin_14,yearin_14)                                    
-forv i=1/5{                                                                     //******need to be changed                                               
+forv i=1/3{                                                                     //******need to be changed                                               
    local wavein2=word("$wavein",`i')
          egen min_`wavein2'=min(`wavein2')
          egen max_`wavein2'=max(`wavein2')
@@ -156,9 +151,16 @@ foreach i of global waves{
 *******************************calculating survival time, censor and lost to follow-up********************
 ****set interview baseline
 **codebook on interview date variables
-* day00: day of interview of the 2002 survey; 1~31, 99=missing
-* month00: month of the interview of the 2002 survey*; 1~12, 99=missing                                                                          
-gen interview_baseline=mdy(month00,day00,2000)                                  //******need to be changed
+* dayin: day of interview of the 2000 survey; 1~31
+* monthin: month of the interview of the 2000 survey; 3~10
+**Replacement of interview date missing value 
+* a. if only the interview day is missing, then the day is assumed to be 15th
+* b. if both month and day are missing, or only the month is missing, the month/day is considered within the interview year, and is assumed to be that of the mid-point in the current interview year
+* c. no interview year is missing.                                 
+ foreach month of global months{                                                //******need to be changed
+ recode dayin (31=30) if monthin==`month'
+ }               //2 changes                               
+gen interview_baseline=mdy(monthin,dayin,2005)
 
 **********************************calc survival time************************
 * gen survival_bas,means the years from baseline to death or censored
@@ -166,7 +168,7 @@ gen interview_baseline=mdy(month00,day00,2000)                                  
 * For those who were lost in the study, survival_bas=the middle time of the wave-interview_baseline
 * For those who were still alive at the end of the study,survival_bas=interview date in the last wave-interview_baseline
 
-* generate dthyear/month/day, means the exact death year/month/day of those who died during the whole period(2000-2014)
+* generate dthyear/month/day, means the exact death year/month/day of those who died during the whole period(2005-2014)
 * gen lostdate, means the lost date for those lost in the survey, and equals to the mid-point of last day of the previous interview and the first day of the next one
 gen dthyear=.
 gen dthmonth=.
@@ -245,7 +247,7 @@ gen residence=1
 replace residence=2 if residenc==3
 label define residence_lb 1 "urban (city or town)" 2"rural"
 label value residence residence_lb
-save dat00_14,replace                                                           //******need to be changed
+save dat05_14                                                                   //******need to be changed
 
 
 
