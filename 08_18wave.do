@@ -4,7 +4,7 @@
 * Zhengting (Johnathan) He
 * July 5th, 2021
 * healthy-aging project
-* Verify Yaxi's code on generting survival time: 98_14wave.do
+* Verify Yaxi's code on generting survival time: 08_14wave.do
 
 // set working directories
 global root "F:\Box Sync\Archives2020LLY\Zhengting\Duke Kunshan University Intern (zh133@duke.edu)\4 healthy aging-CLHLS\Group meeting coordination\survival time"
@@ -241,8 +241,9 @@ foreach month of global months {
 
 ****set interview baseline
 **codebook on interview date variables
-* date00: day of interview of the 2000 survey; 1~31, 99=missing
-* month00: month of the interview of the 2000 survey*; 1~12, 99=missing
+* datein: day of interview of the 2008 survey; 1~31, 99=missing
+* monthin: month of the interview of the 2008 survey*; 1~12, 99=missing
+* yearin: 2008~2009
 gen interview_baseline = mdy(monthin, dayin, yearin)
 
 /************************************* (9) Calculate survival time for each person according to Rule 4 *************************************/
