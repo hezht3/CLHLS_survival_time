@@ -1,54 +1,28 @@
 clear
 cd "C:\AAA\PYAN\CLHLS\Longitudinal data"
-use "C:\AAA\PYAN\CLHLS\Longitudinal data\2008_2014_longitudinal_dataset_released_version1", clear
-*Extract the new added data at 2008 survey*
+use "C:\AAA\PYAN\CLHLS\Longitudinal data\2011_2014_longitudinal_dataset_released_version1", clear
+*Extract the new added data at 2011 survey*
 gen int id_year=mod(id,100)
-keep if id_year==8|id_year==9 //9479 obs
+keep if id_year==12 //1340 obs
 
 ************************codebook on death variables*************************
-*d11vyear, d14vyear: validated year of death*/
-* -9:lost to follow up in the 2000/2002/2005/2008/2011/2014 survey*
-* -7:it is for the deceased persons, not applicable for survivors*
+*d14vyear: validated year of death*/
 * . : missing*/
-*d11vmonth, d14vmonth:validated month of death*/
-* -9: lost to follow-up in the 2000/02/05/08/11/14 survey*/
-* -7: it is for the deceased persons, not applicable for survivors*/
+*d14vmonth:validated month of death*/
 * . : missing*/
-*d11vday, d14vday: validated day of death*/
-* -9: lost to follow-up in the 2000/02/05/08/11/14 survey*/ 
-* -7: it is for the deceased persons, not applicable for survivors*/
+*d14vday: validated day of death*/
 * . 99: missing*/
-*dth08_11, dth11_14: status of survival, death, or lost to follow-up from 2000-2002/2002-2005/2005-2008/2008-2011/2011-2014 waves*/
-* dth**_##: -9:lost to follow-up at the ## survey; -8:died or lost to follow-up in previous waves; 0:surviving at the ## survey; 1: died before the ## survey */
-* dth08_11: 2:surviving at 2011 survey but died before 2012 survey
-
-*********check whether there are logical mistakes for dth**_##
-* If the current death status is -9/0/1, the previous one can only be 0; if the current death status is -8, then the previous can only be -8,-9 and 1. 
-preserve                                                                        //******need to be changed
-rename dth08_11 dth5
-rename dth11_14 dth6
-label drop _all
-tab dth5 if dth6==-9|dth6==0|dth6==1,missing //0
-tab dth5 if dth6==-8,missing //-8,-9,1
-restore
-keep if dth08_11==2
-keep id dth08_11 dth11_14 d11vyear d11vmonth d11vday d14vyear d14vmonth d14vday
-//all the 6 died in 08_11wave and had exact death dates, but were recoded as -9 in dth11_14:id=32151908,32160308,32165108,32166908,32167708,32170908
+*dth11_14: status of survival, death, or lost to follow-up from 2000-2002/2002-2005/2005-2008/2008-2011/2011-2014 waves*/
+* dth**_##: -9:lost to follow-up at the ## survey; 0:surviving at the ## survey; 1: died before the ## survey */
 
 *****************************create work.dta, which has changed the death status according results above, and renanme dth**_##***********
-use "C:\AAA\PYAN\CLHLS\Longitudinal data\2008_2014_longitudinal_dataset_released_version1", clear
-gen int id_year=mod(id,100)
-keep if id_year==8|id_year==9
-recode dth11_14(-9=-8) if id==32151908|id==32160308|id==32165108|id==32166908|id==32167708|id==32170908
-recode dth08_11(2=1)
-rename dth08_11 dth11
 rename dth11_14 dth14
 
-global waves "11 14"                                                            //******need to be changed
-global year1 "2009 2010 2011 2013 2014"
-global year2 "2008 2012"
+global waves "14"                                                            //******need to be changed
+global year1 "2011 2013 2014"
+global year2 "2012"
 global months "4 6 9 11"
-global wavein "in8 in11 in14"
+global wavein "in11 in14"
 save work,replace
 
 *********check whether there are logical mistakes between d*vyear d*vmonth d*vday dth**_##
@@ -72,9 +46,8 @@ duplicates drop d`i'vyear d`i'vmonth d`i'vday dth`i',force
 save wave`i',replace
 use work1,clear
 }
-use wave14,clear
-append using wave11                                                             //******need to be changed
-
+use wave14,clear                                                                //******need to be changed
+                                                             
 /* The results show that, in wave0-wave11, -9, -8, 0/-7(alive) have completely the same freq, 
 all missing values in d*vyear/month/day occur only when dth*=1(died). Only in wave14, all is missing in d14vyear/month/day when dth14=-9/-8/0. 
 There is no logical mistakes between the 4 vars.*/
@@ -104,10 +77,10 @@ capture noisily gen in98=mdy(month98,date98,year9899)
 capture noisily gen in0=mdy(month_0,day_0,2000)
 capture noisily gen in2=mdy(month02,day02,2002)
 capture noisily gen in5=mdy(monthin,dayin,2005)                                 
-capture noisily gen in8=mdy(monthin,dayin,yearin)                               //******need to be changed
-gen in11=mdy(monthin_11,dayin_11,yearin_11)
+capture noisily gen in8=mdy(monthin,dayin,yearin)                               
+gen in11=mdy(monthin,dayin,yearin)                                              //******need to be changed
 gen in14=mdy(monthin_14,dayin_14,yearin_14)                                    
-forv i=1/2{                                                                     //******need to be changed                                               
+forv i=1/1{                                                                       //******need to be changed                                               
    local wavein2=word("$wavein",`i')
          egen min_`wavein2'=min(`wavein2')
          egen max_`wavein2'=max(`wavein2')
@@ -152,18 +125,15 @@ foreach i of global waves{
 *******************************calculating survival time, censor and lost to follow-up********************
 ****set interview baseline
 **codebook on interview date variables
-* dayin: day of interview of the 2000 survey; 1~31
-* monthin: month of the interview of the 2000 survey; 1~12
-* yearin:2008 2009
+* dayin: day of interview of the 2011 survey; 1~31
+* monthin: month of the interview of the 2011 survey; 5~9
+* yearin:2012
 **Replacement of interview date missing value 
 * a. if only the interview day is missing, then the day is assumed to be 15th
 * b. if both month and day are missing, or only the month is missing, the month/day is considered within the interview year, and is assumed to be that of the mid-point in the current interview year
 * c. no interview year is missing.                                 
- foreach month of global months{                                                //******need to be changed
- recode dayin (31=30) if monthin==`month'
- }               //1 change                              
-gen interview_baseline=mdy(monthin,dayin,yearin)
-
+gen interview_baseline=mdy(monthin,dayin,yearin)                                  //******need to be changed
+                             
 **********************************calc survival time************************
 * gen survival_bas,means the years from baseline to death or censored
 * For those who died during the study,survival_bas=date of death-interview_baseline
@@ -249,7 +219,7 @@ gen residence=1
 replace residence=2 if residenc==3
 label define residence_lb 1 "urban (city or town)" 2"rural"
 label value residence residence_lb
-save dat08_14,replace                                                           //******need to be changed
+save dat11_14                                                                  //******need to be changed
 
 
 

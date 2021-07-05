@@ -4,7 +4,7 @@
 * Zhengting (Johnathan) He
 * July 5th, 2021
 * healthy-aging project
-* Verify Yaxi's code on generting survival time: 08_14wave.do
+* Verify Yaxi's code on generting survival time: 11_14wave.do
 
 // set working directories
 global root "F:\Box Sync\Archives2020LLY\Zhengting\Duke Kunshan University Intern (zh133@duke.edu)\4 healthy aging-CLHLS\Group meeting coordination\survival time"
@@ -20,77 +20,48 @@ global INTER "${root}/inter data"
 /*********************************************************************************************************************/
 
 /************************************* (1) Extract new added data at current wave *************************************/
-use "${RAW}/2008_2014_longitudinal_dataset_released_version1.dta", clear
+use "${RAW}/2011_2014_longitudinal_dataset_released_version1.dta", clear
 gen int id_year = mod(id, 100)
-keep if id_year == 8 | id_year == 9 //9479 obs
+keep if id_year == 12 //1340 obs
 
 /************************************* (2) Check the actual values of death date variables, against the codebook for those variables *************************************/
-foreach var in d11vyear d14vyear d11vmonth d14vmonth d11vday d14vday dth08_11 dth11_14 {
+foreach var in d14vyear d14vmonth d14vday dth11_14 {
     codebook `var'
 }
 // codebook on death variables
 
 // validated death year
-* d11vyear, d14vyear: validated year of death*/
-* -9: lost to follow up in the 2005/2008/2011/2014 survey*
-* -7: it is for the deceased persons, not applicable for survivors*
+* d14vyear: validated year of death*/
 * .: missing*/
 
 // validated death month
-* d11vmonth, d14vmonth: validated month of death*/
-* -9: lost to follow-up in the 2005/08/11/14 survey*/
-* -7: it is for the deceased persons, not applicable for survivors*/
+* d14vmonth: validated month of death*/
 * .: missing*/
 
 // validated death day
-* d11vday, d14vday: validated day of death*/
-* -9: lost to follow-up in the 2002/05/08/11/14 survey*/
-* -7: it is for the deceased persons, not applicable for survivors*/
+* d14vday: validated day of death*/
 * . 99: missing*/
 
 // survival status
-* dth08_11, dth11_14: status of survival, death, or lost to follow-up from 2002-2005/2005-2008/2008-2011/2011-2014 waves*/
+* dth11_14: status of survival, death, or lost to follow-up from 2011-2014 waves*/
 * dth**_##:
 * -9: lost to follow-up at the ## survey;
-* -8: died or lost to follow-up in previous waves;
 * 0: surviving at the ## survey;
 * 1: died before the ## survey
-* dth08_11:
-* 2: surviving at 2011 survey but died before 2012 survey
 
-/************************************* (3) Check whether there are logical input mistakes between death status for different waves *************************************/
+/************************************* Not applicable for this wave: (3) Check whether there are logical input mistakes between death status for different waves *************************************/
 // check whether there are logical mistakes for dth**_##
 * If the current death status is -9/0/1, the previous one can only be 0;
 * if the current death status is -8, then the previous can only be -8,-9 and 1.
-preserve
-rename dth08_11 dth5
-rename dth11_14 dth6
-label drop _all
-tab dth5 if dth6 == -9 | dth6 == 0 | dth6 == 1, missing //0
-tab dth5 if dth6 == -8, missing //-8, -9, 1
-restore
-
-keep if dth08_11==2
-keep id dth08_11 dth11_14 d11vyear d11vmonth d11vday d14vyear d14vmonth d14vday
-
-//all the 6 died in 08_11wave and had exact death dates, but were recoded as -9 in dth11_14:id=32151908,32160308,32165108,32166908,32167708,32170908
 
 *****************************create work.dta, which has changed the death status according results above, and renanme dth**_##***********
-use "${RAW}/2008_2014_longitudinal_dataset_released_version1.dta", clear
-gen int id_year = mod(id, 100)
-keep if id_year == 8 | id_year == 9
-
-recode dth11_14(-9=-8) if id == 32151908 | id == 32160308 | id == 32165108 | id == 32166908 | id == 32167708 | id == 32170908
-recode dth08_11(2=1)
-
-rename dth08_11 dth11
 rename dth11_14 dth14
 
-global waves "11 14"
-global year1 "2009 2010 2011 2013 2014"
-global year2 "2008 2012"
+global waves "14"
+global year1 "2011 2013 2014"
+global year2 "2012"
 global months "4 6 9 11"
-global wavein "in8 in11 in14"
+global wavein "in11 in14"
 save "${INTER}/work.dta", replace
 
 /************************************* (4) Check whether there are logical input mistakes between death status and the verified death year, month, day *************************************/
@@ -120,7 +91,6 @@ foreach i of global waves{
     use "${INTER}/work1.dta", clear
 }
 use "${INTER}/wave14.dta",clear
-append using "${INTER}/wave11.dta"
 
 browse
 
@@ -157,10 +127,10 @@ capture noisily gen in0 = mdy(month_0, day_0, 2000)
 capture noisily gen in2 = mdy(month02, day02, 2002)
 capture noisily gen in5 = mdy(monthin, dayin, 2005)
 capture noisily gen in8 = mdy(monthin, dayin, yearin)
-gen in11 = mdy(monthin_11, dayin_11, yearin_11)
+gen in11 = mdy(monthin, dayin, yearin)
 gen in14 = mdy(monthin_14, dayin_14, yearin_14) 
 
-forv i=1/2 {                                                                     //******need to be changed                                               
+forv i=1/1 {                                                                     //******need to be changed                                               
     local wavein2 = word("$wavein", `i')
          egen min_`wavein2' = min(`wavein2')
          egen max_`wavein2' = max(`wavein2')
@@ -232,8 +202,8 @@ codebook monthin  // no missing interview month
 * a. change day 29/max of Feb to 28 for years 99, 01, 02, 03, 05, 06, 07, 09, 10, 11, 13, 14 (non-leap year);
 * b. change day 30/max of Feb to 29 for years 00, 04, 08, 12 (leap year);
 * c. change day 31 to 30 for months 4, 6, 9, 11
-recode dayin (29/max=28) if monthin == 2 & yearin == 2009
-recode dayin (30/max=29) if monthin == 2 & yearin == 2008
+recode dayin (29/max=28) if monthin == 2 & yearin == 2011
+recode dayin (30/max=29) if monthin == 2 & yearin == 2012
 
 foreach month of global months {
     recode dayin (31=30) if monthin == `month'
@@ -241,9 +211,9 @@ foreach month of global months {
 
 ****set interview baseline
 **codebook on interview date variables
-* datein: day of interview of the 2008 survey; 1~31, 99=missing
-* monthin: month of the interview of the 2008 survey*; 1~12, 99=missing
-* yearin: 2008~2009
+* datein: day of interview of the 2011 survey; 1~31
+* monthin: month of the interview of the 2011 survey*; 5~9
+* yearin: 2011 ~ 2012
 gen interview_baseline = mdy(monthin, dayin, yearin)
 
 /************************************* (9) Calculate survival time for each person according to Rule 4 *************************************/
@@ -265,7 +235,7 @@ gen interview_baseline = mdy(monthin, dayin, yearin)
 * `lost' is coed as: 1 = lost, . = not lost
 
 * gen survival_bas,means the years from baseline to death or censored
-* generate dthyear/month/day, means the exact death year/month/day of those who died during the whole period (2008-2014)
+* generate dthyear/month/day, means the exact death year/month/day of those who died during the whole period (2011-2014)
 * gen lostdate, means the lost date for those lost in the survey, and equals to the mid-point of last day of the previous interview and the first day of the next one
 
 gen dthyear = .
@@ -305,25 +275,27 @@ gen survival_bth = survival_bas + trueage
 erase "${INTER}/work.dta"
 macro drop _all
 
+sum survival_bas
+
 /************************************* (10) calc survival time to 2018 *************************************/
 
 merge 1:1 id using "${OUT}/dat14_18surtime.dta", keepus(id survival_bas14_18 survival_bth14_18 censor14_18 lost14_18) nolabel //47, 96, 1110, 821 merged for dat98/00/05/11_14
 
-ren (survival_bas survival_bth lost censor) (survival_bas08_14 survival_bth08_14 lost08_14 censor08_14)
+ren (survival_bas survival_bth lost censor) (survival_bas11_14 survival_bth11_14 lost11_14 censor11_14)
 
-gen survival_bas08_18 = survival_bas08_14
-replace survival_bas08_18 = survival_bas08_14 + survival_bas14_18 if censor08_14 == 0 & _merge == 3  //2452 replaced, one died on/three died before the interview date in 2014, but all were recorded as alive in dat08_14, so donot need special change ('replace survival_bas08_18=survival_bas+survival_bas14_18' works)
+gen survival_bas11_18 = survival_bas11_14
+replace survival_bas11_18 = survival_bas11_14 + survival_bas14_18 if censor11_14 == 0 & _merge == 3
 
-gen survival_bth08_18 = survival_bth08_14
-replace survival_bth08_18 = survival_bth08_14 + survival_bas14_18 if censor08_14 == 0 & _merge == 3
+gen survival_bth11_18 = survival_bth11_14
+replace survival_bth11_18 = survival_bth11_14 + survival_bas14_18 if censor11_14 == 0 & _merge == 3
 
-gen censor08_18 = censor08_14
-replace censor08_18 = censor14_18 if _merge == 3  //814 died between 2014 and 2018
+gen censor11_18 = censor11_14
+replace censor11_18 = censor14_18 if _merge== 3  //23, 47, 282, 290 died between 2014 and 2018
 
-gen lost08_18 = lost08_14
-replace lost08_18 = lost14_18 if _merge == 3  //530 lost between 2014 and 2018
+gen lost11_18 = lost11_14
+replace lost11_18 = lost14_18 if _merge == 3 //14, 29, 288, 87 lost between 2014 and 2018
 
 drop if _merge==2
 drop _merge
 
-save "${OUT}/dat08_18surtime.dta", replace
+save "${OUT}/dat11_18surtime.dta", replace
