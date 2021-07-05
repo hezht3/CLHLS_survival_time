@@ -1,5 +1,8 @@
+*******************************************************************************************************************/
+/************************************** CLHLS longitudinal dataset survival time *************************************/
+/*********************************************************************************************************************/
 * Zhengting (Johnathan) He
-* June 28th, 2021
+* July 5th, 2021
 * healthy-aging project
 * Verify Yaxi's code on generting survival time: 14_18wave.do
 
@@ -63,7 +66,7 @@ foreach i of global waves {
     // unify missing value to "99"
     recode d`i'vday(. 88=99) 
     recode d`i'vmonth(. 88=99)
-    recode d`i'vyear(. 8888 9999=99)  //no 88 for all the 4 vars
+    recode d`i'vyear(. 8888 9999=99)  //no 8888
     
     replace d`i'vyear = 1 if d`i'vyear > 1997 & d`i'vyear < 2020
     replace d`i'vmonth = 1 if d`i'vmonth > 0 & d`i'vmonth < 13
@@ -100,17 +103,17 @@ erase "${INTER}/wave18.dta"
 
 use "${INTER}/work.dta", clear
 *Extract the new added data at 2008 survey*
-gen int id_year=mod(id,100)  //id_year=14 were the newly added ones
+gen int id_year = mod(id, 100)  //id_year=14 were the newly added ones
 
 /*change all . to 99 for month&day, . to 9999 for year*/
-foreach a of global waves{
+foreach a of global waves {
     recode d`a'vday (. = 99) 
     recode d`a'vmonth (. = 99)
     recode d`a'vyear (. = 9999)
 }
 
 ****calculate the mid-point between the last interview date of the previous wave and the first interview date of the next wave
-gen in14 = mdy(monthin, dayin, yearin)                                              //******need to be changed
+gen in14 = mdy(monthin, dayin, yearin)
 gen in18 = mdy(monthin_18, dayin_18, yearin_18)
 
 egen maxin14 = max(in14)
@@ -128,12 +131,12 @@ gen midday = day(mid_1418)
 * c. for the rest of all the scenarios, the year/month/day is assumed to be that of the mid-point between the last interview date of the previous wave and
 * the first interview date of the next wave. (these scenarios inc, all the three variables are missing, or any two variables are missing, or only year is
 * missing.)
+recode d18vday (99=15) if d18vmonth != 99 & d18vyear != 9999 & dth18 == 1 //0 changes
+recode d18vmonth (99=7) if d18vday != 99 & d18vyear != 9999 & dth18 == 1  //0 changes
+
 replace d18vday = midday if d18vday == 99 & dth18 == 1   //47 changes
 replace d18vmonth = midmonth if d18vmonth == 99 & dth18 == 1 //47 changes
 replace d18vyear = midyear if d18vyear == 9999 & dth18 == 1 //47 changes
-
-recode d18vday (99=15) if d18vmonth != 99 & d18vyear != 9999 & dth18 == 1 //0 changes
-recode d18vmonth (99=7) if d18vday != 99 & d18vyear != 9999 & dth18 == 1  //0 changes
 
 /************************************* (6) Modify input mistakes of death date according to Rule 2 *************************************/
 * Rule 2:
@@ -219,4 +222,4 @@ gen survival_bth14_18=survival_bas14_18+trueage
 erase "${INTER}/work.dta"
 macro drop _all
 
-save "${OUT}/dat14_18surtime.dta" // Match with Yaxi's dataset
+save "${OUT}/dat14_18surtime.dta"
