@@ -1,5 +1,8 @@
+/*********************************************************************************************************************/
+/************************************** CLHLS longitudinal dataset survival time *************************************/
+/*********************************************************************************************************************/
 * Zhengting (Johnathan) He
-* May 8th, 2021
+* July 5th, 2021
 * healthy-aging project
 * Verify Yaxi's code on generting survival time: 98_14wave.do
 
@@ -22,7 +25,7 @@ gen int id_year = mod(id, 100)
 keep if id_year == 05 //7459 obs
 
 /************************************* (2) Check the actual values of death date variables, against the codebook for those variables *************************************/
-foreach var in d8vyear d11vyear d14vyear d8vmonth d11vmonth d14vmonth d8vday d11vday d14vday dth02_05 dth05_08 dth08_11 dth11_14 {
+foreach var in d8vyear d11vyear d14vyear d8vmonth d11vmonth d14vmonth d8vday d11vday d14vday dth05_08 dth08_11 dth11_14 {
     codebook `var'
 }
 // codebook on death variables
@@ -104,7 +107,7 @@ foreach i of global waves {
 label drop _all
 save "${INTER}/work1.dta", replace
 
-foreach i of global waves{
+foreach i of global waves {
     keep d`i'vyear d`i'vmonth d`i'vday dth`i' fre`i'_year fre`i'_month fre`i'_day fre`i'_dth 
     duplicates drop d`i'vyear d`i'vmonth d`i'vday dth`i', force 
     save "${INTER}/wave`i'.dta", replace
@@ -122,7 +125,7 @@ There is no logical mistakes between the 4 vars.*/
 // tabulate the lost,died and alive number for each wave
 use "${INTER}/work1.dta",clear
 foreach i of global waves{
-    tabulate dth`i' if dth`i' !=-8
+    tabulate dth`i' if dth`i' != -8
 }
 
 foreach i of global waves{
@@ -146,12 +149,12 @@ foreach a of global waves {
 capture noisily gen in98 = mdy(month98, date98, year9899)                            
 capture noisily gen in0 = mdy(month_0, day_0, 2000)
 capture noisily gen in2 = mdy(month02, day02, 2002)
-capture noisily gen in5 = mdy(monthin, dayin, 2005)                                 //******need to be changed
+capture noisily gen in5 = mdy(monthin, dayin, 2005)
 capture noisily gen in8 = mdy(month_8, day_8, year_8)
 gen in11 = mdy(monthin_11, dayin_11, yearin_11)
 gen in14 = mdy(monthin_14, dayin_14, yearin_14) 
 
-forv i=1/3 {                                                                     //******need to be changed                                               
+forv i=1/3 {                                              
     local wavein2 = word("$wavein", `i')
          egen min_`wavein2' = min(`wavein2')
          egen max_`wavein2' = max(`wavein2')
@@ -215,7 +218,8 @@ foreach i of global waves{
 * and the latest interiew date of that year
 * c. no interview year is missing
 
-recode dayin (99=15) if monthin != 99                                             //******need to be changed                                               
+codebook dayin    // no missing interview day
+codebook monthin  // no missing interview month
 
 /************************************* (8) Modify input mistakes of interview baseline date according to Rule 2 *************************************/
 * Rule 2:
