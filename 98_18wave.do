@@ -1,5 +1,8 @@
+/*********************************************************************************************************************/
+/************************************** CLHLS longitudinal dataset survival time *************************************/
+/*********************************************************************************************************************/
 * Zhengting (Johnathan) He
-* May 8th, 2021
+* July 5th, 2021
 * healthy-aging project
 * Verify Yaxi's code on generting survival time: 98_14wave.do
 
@@ -75,13 +78,16 @@ rename dth05_08 dth4
 rename dth08_11 dth5
 rename dth11_14 dth6
 label drop _all
-forv i=1/5 {
-    local j=`i'+1
+forv i = 1/5 {
+    local j = `i'+1
     tab dth`i' if dth`j' == -9 | dth`j' == 0 | dth`j' == 1, missing //0
     tab dth`i' if dth`j' == -8, missing //-8, -9, 1
 }
 restore
-keep if (dth98_00==-9&(dth00_02==0|dth00_02==1))|(dth02_05==1&(dth05_08==0|dth05_08==1))
+keep if (dth98_00 == -9 & (dth00_02 == 0 | dth00_02 == 1))|(dth02_05 == 1 & (dth05_08 == 0|dth05_08 == 1))
+keep id dth98_00 dth00_02 dth02_05 dth05_08 dth08_11 dth11_14 d0vyear d0vmonth d0vday d2vyear d2vmonth d2vday d5vyear d5vmonth d5vday d8vyear d8vmonth d8vday d11vyear d11vmonth d11vday d14vyear d14vmonth d14vday
+
+browse
 
 * id = 45107898 & 50001898 were problematic
 * id=50001898, died in 02_05wave, should change dth98_00/d0vyear/month/day from -9 to 0/-7
@@ -89,7 +95,8 @@ keep if (dth98_00==-9&(dth00_02==0|dth00_02==1))|(dth02_05==1&(dth05_08==0|dth05
 
 *****************************create work.dta, which has changed the death status according results above, and renanme dth**_##***********
 clear
-use "${RAW}/1998_2014_longitudinal_dataset_released_version1.dta"  //******need to be changed
+use "${RAW}/1998_2014_longitudinal_dataset_released_version1.dta"
+gen int id_year = mod(id, 100)
 
 replace dth98_00 = 0 if id == 50001898 
 replace dth02_05 = 0 if id == 45107898
@@ -117,7 +124,7 @@ foreach i of global waves {
     // unify missing value to "99"
     recode d`i'vday(. 88=99) 
     recode d`i'vmonth(. 88=99)
-    recode d`i'vyear(. 8888 9999=99)  //no 88 for all the 4 vars
+    recode d`i'vyear(. 8888 9999=99)  //no 8888 for all the 4 vars
     
     replace d`i'vyear = 1 if d`i'vyear > 1997 & d`i'vyear < 2020
     replace d`i'vmonth = 1 if d`i'vmonth > 0 & d`i'vmonth < 13
@@ -131,11 +138,11 @@ foreach i of global waves {
 label drop _all
 save "${INTER}/work1.dta", replace
 
-foreach i of global waves{
+foreach i of global waves {
+use "${INTER}/work1.dta", clear
     keep d`i'vyear d`i'vmonth d`i'vday dth`i' fre`i'_year fre`i'_month fre`i'_day fre`i'_dth 
     duplicates drop d`i'vyear d`i'vmonth d`i'vday dth`i', force 
-    save "${INTER}/wave`i'.dta", replace
-    use "${INTER}/work1.dta", clear
+save "${INTER}/wave`i'.dta", replace
 }
 use "${INTER}/wave14.dta",clear
 append using "${INTER}/wave0.dta" "${INTER}/wave2.dta" "${INTER}/wave5.dta" "${INTER}/wave8.dta" "${INTER}/wave11.dta"
@@ -149,7 +156,7 @@ There is no logical mistakes between the 4 vars.*/
 // tabulate the lost,died and alive number for each wave
 use "${INTER}/work1.dta",clear
 foreach i of global waves{
-    tabulate dth`i' if dth`i' !=-8
+    tabulate dth`i' if dth`i' != -8
 }
 
 foreach i of global waves{
@@ -203,14 +210,14 @@ drop min_`wavein3' max_`wavein3'
 * missing.)
 local j = 1
 foreach i of global waves { 
+        recode d`i'vday (99 = 15) if d`i'vmonth != 99 & d`i'vyear != 9999 & dth`i' == 1 
+        recode d`i'vmonth (99 = 7) if d`i'vday != 99 & d`i'vyear != 9999 & dth`i' == 1 
+    
     local inid = word("$wavein",`j')
         replace d`i'vday = midday_`inid'_in`i' if d`i'vday == 99 & dth`i' == 1
         replace d`i'vmonth = midmonth_`inid'_in`i' if d`i'vmonth == 99 & dth`i' == 1
         replace d`i'vyear = midyear_`inid'_in`i' if d`i'vyear == 9999 & dth`i' == 1
       
-        recode d`i'vday (99 = 15) if d`i'vmonth != 99 & d`i'vyear != 9999 & dth`i' == 1 
-        recode d`i'vmonth (99 = 7) if d`i'vday != 99 & d`i'vyear != 9999 & dth`i' == 1 
-    
     local j = `j'+1
 }
 
@@ -253,8 +260,8 @@ gen end98 = mdy(12, 31, 1998)
 gen begin99 = mdy(1, 1, 1999)
 gen mid_in98 = (min_in98 + end98)/2
 gen mid_in99 = (begin99 + max_in98)/2
-foreach x in month day{
-    forv i=98/99{
+foreach x in month day {
+    forv i=98/99 {
         gen mid`x'_in`i'=`x'(mid_in`i')
     }
 }
