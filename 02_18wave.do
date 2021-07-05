@@ -1,5 +1,8 @@
+/*********************************************************************************************************************/
+/************************************** CLHLS longitudinal dataset survival time *************************************/
+/*********************************************************************************************************************/
 * Zhengting (Johnathan) He
-* May 8th, 2021
+* July 5th, 2021
 * healthy-aging project
 * Verify Yaxi's code on generting survival time: 98_14wave.do
 
@@ -80,8 +83,7 @@ keep if dth08_11 == 2 & (dth11_14 == -9 | dth11_14 == 0 | dth11_14 == 1)
 // id = 32176802, died in 08_11 wave(dth08_11=2,2011.12.9), but dth11_14 = -9, d14vyear/month/day = .
 
 *****************************create work.dta, which has changed the death status according results above, and renanme dth**_##***********
-clear
-use "${RAW}/2002_2014_longitudinal_dataset_released_version1.dta"  //******need to be changed
+use "${RAW}/2002_2014_longitudinal_dataset_released_version1.dta", clear
 gen int id_year = mod(id, 100)
 keep if id_year == 02
 
@@ -137,11 +139,11 @@ There is no logical mistakes between the 4 vars.*/
 
 // tabulate the lost,died and alive number for each wave
 use "${INTER}/work1.dta",clear
-foreach i of global waves{
-    tabulate dth`i' if dth`i' !=-8
+foreach i of global waves {
+    tabulate dth`i' if dth`i' != -8
 }
 
-foreach i of global waves{
+foreach i of global waves {
     erase "${INTER}/wave`i'.dta"
 }
 erase "${INTER}/work1.dta"
@@ -161,7 +163,7 @@ foreach a of global waves {
 ****calculate the mid-point between the last interview date of the previous wave and the first interview date of the next wave
 capture noisily gen in98 = mdy(month98, date98, year9899)                            
 capture noisily gen in0 = mdy(month_0, day_0, 2000)
-capture noisily gen in2 = mdy(month02, day02, 2002)                                 //******need to be changed
+capture noisily gen in2 = mdy(month02, day02, 2002)
 capture noisily gen in5 = mdy(month_5, day_5, 2005)
 capture noisily gen in8 = mdy(month_8, day_8, year_8)
 gen in11 = mdy(monthin_11, dayin_11, yearin_11)
@@ -192,14 +194,14 @@ drop min_`wavein3' max_`wavein3'
 * missing.)
 local j = 1
 foreach i of global waves { 
+        recode d`i'vday (99 = 15) if d`i'vmonth != 99 & d`i'vyear != 9999 & dth`i' == 1 
+        recode d`i'vmonth (99 = 7) if d`i'vday != 99 & d`i'vyear != 9999 & dth`i' == 1 
+    
     local inid = word("$wavein",`j')
         replace d`i'vday = midday_`inid'_in`i' if d`i'vday == 99 & dth`i' == 1
         replace d`i'vmonth = midmonth_`inid'_in`i' if d`i'vmonth == 99 & dth`i' == 1
         replace d`i'vyear = midyear_`inid'_in`i' if d`i'vyear == 9999 & dth`i' == 1
       
-        recode d`i'vday (99 = 15) if d`i'vmonth != 99 & d`i'vyear != 9999 & dth`i' == 1 
-        recode d`i'vmonth (99 = 7) if d`i'vday != 99 & d`i'vyear != 9999 & dth`i' == 1 
-    
     local j = `j'+1
 }
 
@@ -231,7 +233,11 @@ foreach i of global waves{
 * and the latest interiew date of that year
 * c. no interview year is missing
 
-recode day02 (99=15) if month02 != 99                                             //******need to be changed                                               
+gen mid_in2 = (min_in2 + max_in2)/2
+foreach x in month day {
+	gen mid`x'_in2 = `x'(mid_in2)
+	replace `x'02 = mid`x'_in2 if `x'02 == 99
+}  
 
 /************************************* (8) Modify input mistakes of interview baseline date according to Rule 2 *************************************/
 * Rule 2:
@@ -240,7 +246,7 @@ recode day02 (99=15) if month02 != 99                                           
 * c. change day 31 to 30 for months 4, 6, 9, 11
 recode day02 (29/max=28) if month02 == 2
 
-foreach month of global months{
+foreach month of global months {
     recode day02 (31=30) if month02 == `month'
 }
 
@@ -319,9 +325,9 @@ gen survival_bas02_18 = survival_bas02_14
 replace survival_bas02_18 = survival_bas02_14 + survival_bas14_18 if censor02_14 == 0 & _merge == 3  //1538 replaced, one died in 2011.6.30, but was recorded as missing in d18vyear/month/day, so no need to be changed
 preserve
 
-    keep if censor02_14==1 & _merge==3
+    /* drop if censor02_14 == 1 & _merge == 3
 	display id dthyear dthmonth dthday survival_bas02_14 lost02_14 censor02_14 d18vyear d18vmonth d18vday survival_bas14_18
-restore
+restore */
 
 gen survival_bth02_18 = survival_bth02_14
 replace survival_bth02_18 = survival_bth02_14 + survival_bas14_18 if censor02_14 == 0 & _merge == 3
