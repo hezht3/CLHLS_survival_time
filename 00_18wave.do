@@ -1,3 +1,6 @@
+/*********************************************************************************************************************/
+/************************************** CLHLS longitudinal dataset survival time *************************************/
+/*********************************************************************************************************************/
 * Zhengting (Johnathan) He
 * May 8th, 2021
 * healthy-aging project
@@ -18,8 +21,8 @@ global INTER "${root}/inter data"
 
 /************************************* (1) Extract new added data at current wave *************************************/
 use "${RAW}/2000_2014_longitudinal_dataset_released_version1.dta", clear
-gen int id_year=mod(id,100)
-keep if id_year==0 //6368 obs
+gen int id_year = mod(id, 100)
+keep if id_year == 0 //6368 obs
 
 /************************************* (2) Check the actual values of death date variables, against the codebook for those variables *************************************/
 foreach var in d2vyear d5vyear d8vyear d11vyear d14vyear d2vmonth d5vmonth d8vmonth d11vmonth d14vmonth d2vday d5vday d8vday d11vday d14vday dth98_00 dth00_02 dth02_05 dth05_08 dth08_11 dth11_14 {
@@ -75,13 +78,6 @@ forv i = 2/5 {
     tab dth`i' if dth`j' == -8, missing //-8, -9, 1
 }
 restore
-keep if (dth05_08 == -9 | dth05_08 == 0 | dth05_08 == 1) & dth02_05 == 1
-
-*****************************create work.dta, which has changed the death status according results above, and renanme dth**_##***********
-clear
-use "${RAW}/2000_2014_longitudinal_dataset_released_version1.dta"  //******need to be changed
-gen int id_year=mod(id,100)
-keep if id_year==0 //6368 obs
 
 rename dth00_02 dth2
 rename dth02_05 dth5
@@ -132,9 +128,9 @@ all missing values in d*vyear/month/day occur only when dth*=1(died). Only in wa
 There is no logical mistakes between the 4 vars.*/
 
 // tabulate the lost,died and alive number for each wave
-use "${INTER}/work1.dta",clear
+use "${INTER}/work1.dta", clear
 foreach i of global waves{
-    tabulate dth`i' if dth`i' !=-8
+    tabulate dth`i' if dth`i' != -8
 }
 
 foreach i of global waves{
@@ -163,7 +159,7 @@ capture noisily gen in8 = mdy(month_8, day_8, year_8)
 gen in11 = mdy(monthin_11, dayin_11, yearin_11)
 gen in14 = mdy(monthin_14, dayin_14, yearin_14)
 
-forv i=1/5 {                                                                     //******need to be changed                                               
+forv i = 1/5 {                                                                     //******need to be changed                                               
     local wavein2 = word("$wavein", `i')
          egen min_`wavein2' = min(`wavein2')
          egen max_`wavein2' = max(`wavein2')
@@ -188,13 +184,13 @@ drop min_`wavein3' max_`wavein3'
 * missing.)
 local j = 1
 foreach i of global waves { 
+        recode d`i'vday (99 = 15) if d`i'vmonth != 99 & d`i'vyear != 9999 & dth`i' == 1 
+        recode d`i'vmonth (99 = 7) if d`i'vday != 99 & d`i'vyear != 9999 & dth`i' == 1 
+    
     local inid = word("$wavein",`j')
         replace d`i'vday = midday_`inid'_in`i' if d`i'vday == 99 & dth`i' == 1
         replace d`i'vmonth = midmonth_`inid'_in`i' if d`i'vmonth == 99 & dth`i' == 1
         replace d`i'vyear = midyear_`inid'_in`i' if d`i'vyear == 9999 & dth`i' == 1
-      
-        recode d`i'vday (99 = 15) if d`i'vmonth != 99 & d`i'vyear != 9999 & dth`i' == 1 
-        recode d`i'vmonth (99 = 7) if d`i'vday != 99 & d`i'vyear != 9999 & dth`i' == 1 
     
     local j = `j'+1
 }
@@ -204,7 +200,7 @@ foreach i of global waves {
 * a. change day 29/max of Feb to 28 for years 99, 01, 02, 03, 05, 06, 07, 09, 10, 11, 13, 14 (non-leap year);
 * b. change day 30/max of Feb to 29 for years 00, 04, 08, 12 (leap year);
 * c. change day 31 to 30 for months 4, 6, 9, 11
-foreach i of global waves{
+foreach i of global waves {
     foreach year of global year1{
         recode d`i'vday (29/max=28) if d`i'vyear == `year' & d`i'vmonth == 2
     }
@@ -227,16 +223,17 @@ foreach i of global waves{
 * and the latest interiew date of that year
 * c. no interview year is missing
 
-recode day00 (99=15) if month00 != 99                                             //******need to be changed                                               
+codebook day00     // no missing interview day
+codebook month00   // no missing interview month                                            
 
 /************************************* (8) Modify input mistakes of interview baseline date according to Rule 2 *************************************/
 * Rule 2:
 * a. change day 29/max of Feb to 28 for years 99, 01, 02, 03, 05, 06, 07, 09, 10, 11, 13, 14 (non-leap year);
 * b. change day 30/max of Feb to 29 for years 00, 04, 08, 12 (leap year);
 * c. change day 31 to 30 for months 4, 6, 9, 11
-recode day00 (29/max=28) if month00 == 2
+recode day00 (30/max=29) if month00 == 2
 
-foreach month of global months{
+foreach month of global months {
     recode day00 (31=30) if month00 == `month'
 }
 
