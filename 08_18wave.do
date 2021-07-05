@@ -265,7 +265,7 @@ gen interview_baseline = mdy(monthin, dayin, yearin)
 * `lost' is coed as: 1 = lost, . = not lost
 
 * gen survival_bas,means the years from baseline to death or censored
-* generate dthyear/month/day, means the exact death year/month/day of those who died during the whole period (2005-2014)
+* generate dthyear/month/day, means the exact death year/month/day of those who died during the whole period (2008-2014)
 * gen lostdate, means the lost date for those lost in the survey, and equals to the mid-point of last day of the previous interview and the first day of the next one
 
 gen dthyear = .
