@@ -252,8 +252,8 @@ foreach month of global months {
 
 ****set interview baseline
 **codebook on interview date variables
-* date00: day of interview of the 2000 survey; 1~31, 99=missing
-* month00: month of the interview of the 2000 survey*; 1~12, 99=missing
+* date02: day of interview of the 2002 survey; 1~31, 99=missing
+* month02: month of the interview of the 2002 survey*; 1~12, 99=missing
 gen interview_baseline = mdy(month02, day02, 2002)                                  //******need to be changed      
 
 /************************************* (9) Calculate survival time for each person according to Rule 4 *************************************/
