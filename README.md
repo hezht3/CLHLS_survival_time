@@ -1,6 +1,6 @@
 # Chinese Longitudinal Healthy Longevity Survey (CLHLS) survival time generation
 
-These codes are used to generate **survival time** and **survival status** of seven waves (1998, 2000, 2002, 2005, 2008, 2011, 2014, and 2018) of the Chinese Longitudinal Healthy Longevity Survey (CLHLS) for fitting survival analysis models.
+These codes are used to generate **survival time** and **survival status** of eight waves (1998, 2000, 2002, 2005, 2008, 2011, 2014, and 2018) of the Chinese Longitudinal Healthy Longevity Survey (CLHLS) for fitting survival analysis models.
 
 Generation of the survival time and status follows the following flow and criteria:
 ```
